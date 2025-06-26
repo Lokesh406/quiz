@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const userDisplayName = document.getElementById('userDisplayName');
     const logoutBtn = document.getElementById('logoutBtn');
 
-    // Fullscreen modal
     const fullscreenModal = new bootstrap.Modal(document.getElementById('fullscreenModal'), {
         backdrop: 'static',
         keyboard: false
@@ -20,91 +19,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentQuestionIndex = 0;
     let userAnswers = [];
-    let timerInterval;
-    const examDuration = 60 * 5;
+    const examDuration = 5 * 60;
     let timeLeft = examDuration;
+    let timerInterval;
 
     const questions = [
-        {
-            type: 'single-select',
-            question: 'What is the capital of France?',
-            options: ['Berlin', 'Madrid', 'Paris', 'Rome'],
-            correctAnswer: 'Paris'
-        },
-        {
-            type: 'multi-select',
-            question: 'Which of these are programming languages?',
-            options: ['HTML', 'CSS', 'JavaScript', 'Python', 'French'],
-            correctAnswer: ['JavaScript', 'Python']
-        },
-        {
-            type: 'fill-in-the-blank',
-            question: 'The largest ocean on Earth is the _________ Ocean.',
-            correctAnswer: 'Pacific'
-        },
-        {
-            type: 'single-select',
-            question: 'What is 2 + 2?',
-            options: ['3', '4', '5', '6'],
-            correctAnswer: '4'
-        },
-        {
-            type: 'single-select',
-            question: 'Which planet is known as the Red Planet?',
-            options: ['Earth', 'Mars', 'Jupiter', 'Venus'],
-            correctAnswer: 'Mars'
-        },
-        {
-            type: 'multi-select',
-            question: 'Select the primary colors:',
-            options: ['Red', 'Green', 'Blue', 'Yellow', 'Orange'],
-            correctAnswer: ['Red', 'Blue', 'Yellow']
-        },
-        {
-            type: 'fill-in-the-blank',
-            question: 'The chemical symbol for water is _____.',
-            correctAnswer: 'H2O'
-        },
-        {
-            type: 'single-select',
-            question: 'Who painted the Mona Lisa?',
-            options: ['Vincent van Gogh', 'Pablo Picasso', 'Leonardo da Vinci', 'Claude Monet'],
-            correctAnswer: 'Leonardo da Vinci'
-        },
-        {
-            type: 'single-select',
-            question: 'What is the largest mammal?',
-            options: ['Elephant', 'Blue Whale', 'Giraffe', 'Polar Bear'],
-            correctAnswer: 'Blue Whale'
-        },
-        {
-            type: 'fill-in-the-blank',
-            question: 'The process by which plants make their own food is called __________.',
-            correctAnswer: 'Photosynthesis'
-        }
+        { type: 'single-select', question: 'What is the capital of France?', options: ['Berlin', 'Madrid', 'Paris', 'Rome'], correctAnswer: 'Paris' },
+        { type: 'multi-select', question: 'Which of these are programming languages?', options: ['HTML', 'CSS', 'JavaScript', 'Python', 'French'], correctAnswer: ['JavaScript', 'Python'] },
+        { type: 'fill-in-the-blank', question: 'The largest ocean on Earth is the _________ Ocean.', correctAnswer: 'Pacific' },
+        { type: 'single-select', question: 'What is 2 + 2?', options: ['3', '4', '5', '6'], correctAnswer: '4' },
+        { type: 'single-select', question: 'Which planet is known as the Red Planet?', options: ['Earth', 'Mars', 'Jupiter', 'Venus'], correctAnswer: 'Mars' },
+        { type: 'multi-select', question: 'Select the primary colors:', options: ['Red', 'Green', 'Blue', 'Yellow', 'Orange'], correctAnswer: ['Red', 'Blue', 'Yellow'] },
+        { type: 'fill-in-the-blank', question: 'The chemical symbol for water is _____.', correctAnswer: 'H2O' },
+        { type: 'single-select', question: 'Who painted the Mona Lisa?', options: ['Vincent van Gogh', 'Pablo Picasso', 'Leonardo da Vinci', 'Claude Monet'], correctAnswer: 'Leonardo da Vinci' },
+        { type: 'single-select', question: 'What is the largest mammal?', options: ['Elephant', 'Blue Whale', 'Giraffe', 'Polar Bear'], correctAnswer: 'Blue Whale' },
+        { type: 'fill-in-the-blank', question: 'The process by which plants make their own food is called __________.', correctAnswer: 'Photosynthesis' }
     ];
 
     const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
     if (!loggedInUser) {
-        alert('Please log in to access the quiz.');
-        window.location.href = 'index.html';
+        alert("Please log in to access the quiz.");
+        window.location.href = "login.html";
         return;
     }
 
     userDisplayName.textContent = `Welcome, ${loggedInUser.fullName || loggedInUser.email}`;
     userAnswers = new Array(questions.length).fill(null);
+    updateTimerDisplay();
 
-    // Show default timer immediately
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-    timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    function updateTimerDisplay() {
+        const min = Math.floor(timeLeft / 60);
+        const sec = timeLeft % 60;
+        timerElement.textContent = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
+    }
 
-    // Fullscreen logic
     function requestFullscreen() {
-        const docEl = document.documentElement;
-        if (docEl.requestFullscreen) docEl.requestFullscreen();
-        else if (docEl.webkitRequestFullscreen) docEl.webkitRequestFullscreen();
-        else if (docEl.msRequestFullscreen) docEl.msRequestFullscreen();
+        const el = document.documentElement;
+        if (el.requestFullscreen) el.requestFullscreen();
+        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+        else if (el.msRequestFullscreen) el.msRequestFullscreen();
     }
 
     enableFullscreenBtn.addEventListener('click', () => {
@@ -123,13 +76,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function startTimer() {
         timerInterval = setInterval(() => {
             timeLeft--;
-            const min = Math.floor(timeLeft / 60);
-            const sec = timeLeft % 60;
-            timerElement.textContent = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-
+            updateTimerDisplay();
             if (timeLeft <= 0) {
                 clearInterval(timerInterval);
-                alert('Time is up! Submitting your answers.');
+                alert("Time is up! Submitting your answers.");
                 submitQuiz();
             }
         }, 1000);
@@ -186,7 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
             userAnswers[currentQuestionIndex] = selected ? selected.value : null;
         } else if (q.type === 'multi-select') {
             const selected = Array.from(document.querySelectorAll(`input[name="q${currentQuestionIndex}"]:checked`)).map(e => e.value);
-            userAnswers[currentQuestionIndex] = selected.length > 0 ? selected : null;
+            userAnswers[currentQuestionIndex] = selected.length ? selected : null;
         } else if (q.type === 'fill-in-the-blank') {
             const input = document.getElementById('fillInTheBlankInput');
             userAnswers[currentQuestionIndex] = input ? input.value.trim() : null;
@@ -250,7 +200,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Event Listeners
     nextBtn.addEventListener('click', nextQuestion);
     prevBtn.addEventListener('click', prevQuestion);
     submitBtn.addEventListener('click', submitQuiz);
@@ -263,9 +212,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Start quiz after modal
     function startQuiz() {
         loadQuestion();
         startTimer();
     }
 });
+
