@@ -8,20 +8,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const submitBtn = document.getElementById('submitBtn');
     const timerElement = document.getElementById('timer');
     const userDisplayName = document.getElementById('userDisplayName');
-    
+    const logoutBtn = document.getElementById('logoutBtn');
 
-    // Fullscreen Modal Elements
-    const fullscreenModal = new bootstrap.Modal(document.getElementById('fullscreenModal'), { backdrop: 'static', keyboard: false });
+    // Fullscreen modal
+    const fullscreenModal = new bootstrap.Modal(document.getElementById('fullscreenModal'), {
+        backdrop: 'static',
+        keyboard: false
+    });
     const enableFullscreenBtn = document.getElementById('enableFullscreenBtn');
     const skipFullscreenBtn = document.getElementById('skipFullscreenBtn');
 
     let currentQuestionIndex = 0;
-    let userAnswers = []; // To store user's selected answers
+    let userAnswers = [];
     let timerInterval;
-    const examDuration = 60 * 5; // 5 minutes in seconds (adjust as needed)
+    const examDuration = 60 * 5;
     let timeLeft = examDuration;
 
-    // Simulate questions data (replace with actual questions)
     const questions = [
         {
             type: 'single-select',
@@ -82,42 +84,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     ];
 
-    // Check if user is logged in
     const loggedInUser = JSON.parse(localStorage.getItem('loggedInUser'));
     if (!loggedInUser) {
         alert('Please log in to access the quiz.');
-        window.location.href = 'index.html'; // Redirect to login
+        window.location.href = 'index.html';
         return;
     }
-    userDisplayName.textContent = `Welcome, ${loggedInUser.fullName || loggedInUser.email}`;
 
-    // Initialize userAnswers array with nulls for each question
+    userDisplayName.textContent = `Welcome, ${loggedInUser.fullName || loggedInUser.email}`;
     userAnswers = new Array(questions.length).fill(null);
 
-    // --- Fullscreen Logic ---
-    function requestFullscreen() {
-        const element = document.documentElement; // Entire HTML document
-        if (element.requestFullscreen) {
-            element.requestFullscreen();
-        } else if (element.mozRequestFullScreen) { /* Firefox */
-            element.mozRequestFullScreen();
-        } else if (element.webkitRequestFullscreen) { /* Chrome, Safari and Opera */
-            element.webkitRequestFullscreen();
-        } else if (element.msRequestFullscreen) { /* IE/Edge */
-            element.msRequestFullscreen();
-        }
-    }
+    // Show default timer immediately
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-    function exitFullscreen() {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        } else if (document.mozCancelFullScreen) { /* Firefox */
-            document.mozCancelFullScreen();
-        } else if (document.webkitExitFullscreen) { /* Chrome, Safari and Opera */
-            document.webkitExitFullscreen();
-        } else if (document.msExitFullscreen) { /* IE/Edge */
-            document.msExitFullscreen();
-        }
+    // Fullscreen logic
+    function requestFullscreen() {
+        const docEl = document.documentElement;
+        if (docEl.requestFullscreen) docEl.requestFullscreen();
+        else if (docEl.webkitRequestFullscreen) docEl.webkitRequestFullscreen();
+        else if (docEl.msRequestFullscreen) docEl.msRequestFullscreen();
     }
 
     enableFullscreenBtn.addEventListener('click', () => {
@@ -131,17 +118,14 @@ document.addEventListener('DOMContentLoaded', () => {
         startQuiz();
     });
 
-    // Show fullscreen modal on page load
     fullscreenModal.show();
 
-
-    // --- Timer Logic ---
     function startTimer() {
         timerInterval = setInterval(() => {
             timeLeft--;
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            const min = Math.floor(timeLeft / 60);
+            const sec = timeLeft % 60;
+            timerElement.textContent = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
 
             if (timeLeft <= 0) {
                 clearInterval(timerInterval);
@@ -155,68 +139,57 @@ document.addEventListener('DOMContentLoaded', () => {
         clearInterval(timerInterval);
     }
 
-    // --- Quiz Display Logic ---
     function loadQuestion() {
-        const question = questions[currentQuestionIndex];
+        const q = questions[currentQuestionIndex];
         currentQuestionNumberElement.textContent = currentQuestionIndex + 1;
         totalQuestionsElement.textContent = questions.length;
-        questionTextElement.textContent = question.question;
-        optionsContainer.innerHTML = ''; // Clear previous options
+        questionTextElement.textContent = q.question;
+        optionsContainer.innerHTML = '';
 
-        // Disable/enable Prev/Next/Submit buttons
         prevBtn.disabled = currentQuestionIndex === 0;
         nextBtn.disabled = currentQuestionIndex === questions.length - 1;
-        if (currentQuestionIndex === questions.length - 1) {
-            submitBtn.classList.remove('d-none');
-        } else {
-            submitBtn.classList.add('d-none');
-        }
+        submitBtn.classList.toggle('d-none', currentQuestionIndex !== questions.length - 1);
 
-        // Render options based on question type
-        if (question.type === 'single-select') {
-            question.options.forEach((option, index) => {
-                const optionId = `q${currentQuestionIndex}-option${index}`;
-                const isChecked = userAnswers[currentQuestionIndex] === option;
+        if (q.type === 'single-select') {
+            q.options.forEach((opt, i) => {
+                const id = `q${currentQuestionIndex}-opt${i}`;
+                const checked = userAnswers[currentQuestionIndex] === opt;
                 optionsContainer.innerHTML += `
                     <div class="form-check mb-2">
-                        <input class="form-check-input" type="radio" name="question${currentQuestionIndex}" id="${optionId}" value="${option}" ${isChecked ? 'checked' : ''}>
-                        <label class="form-check-label option-label" for="${optionId}">${String.fromCharCode(65 + index)}. ${option}</label>
+                        <input class="form-check-input" type="radio" name="q${currentQuestionIndex}" id="${id}" value="${opt}" ${checked ? 'checked' : ''}>
+                        <label class="form-check-label option-label" for="${id}">${String.fromCharCode(65 + i)}. ${opt}</label>
                     </div>
                 `;
             });
-        } else if (question.type === 'multi-select') {
-            question.options.forEach((option, index) => {
-                const optionId = `q${currentQuestionIndex}-option${index}`;
-                // userAnswers for multi-select will be an array
-                const isChecked = userAnswers[currentQuestionIndex] && userAnswers[currentQuestionIndex].includes(option);
+        } else if (q.type === 'multi-select') {
+            q.options.forEach((opt, i) => {
+                const id = `q${currentQuestionIndex}-opt${i}`;
+                const checked = userAnswers[currentQuestionIndex]?.includes(opt);
                 optionsContainer.innerHTML += `
                     <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" name="question${currentQuestionIndex}" id="${optionId}" value="${option}" ${isChecked ? 'checked' : ''}>
-                        <label class="form-check-label option-label" for="${optionId}">${String.fromCharCode(65 + index)}. ${option}</label>
+                        <input class="form-check-input" type="checkbox" name="q${currentQuestionIndex}" id="${id}" value="${opt}" ${checked ? 'checked' : ''}>
+                        <label class="form-check-label option-label" for="${id}">${String.fromCharCode(65 + i)}. ${opt}</label>
                     </div>
                 `;
             });
-        } else if (question.type === 'fill-in-the-blank') {
-             optionsContainer.innerHTML = `
-                <div class="mb-3">
-                    <label for="fillInTheBlankInput" class="form-label visually-hidden">Your Answer</label>
-                    <input type="text" class="form-control form-control-lg" id="fillInTheBlankInput" placeholder="Type your answer here..." value="${userAnswers[currentQuestionIndex] || ''}">
-                </div>
+        } else if (q.type === 'fill-in-the-blank') {
+            optionsContainer.innerHTML = `
+                <input type="text" class="form-control" id="fillInTheBlankInput" placeholder="Type your answer..." value="${userAnswers[currentQuestionIndex] || ''}">
             `;
         }
     }
 
     function saveAnswer() {
-        const question = questions[currentQuestionIndex];
-        if (question.type === 'single-select') {
-            const selectedOption = document.querySelector(`input[name="question${currentQuestionIndex}"]:checked`);
-            userAnswers[currentQuestionIndex] = selectedOption ? selectedOption.value : null;
-        } else if (question.type === 'multi-select') {
-            const selectedOptions = Array.from(document.querySelectorAll(`input[name="question${currentQuestionIndex}"]:checked`)).map(input => input.value);
-            userAnswers[currentQuestionIndex] = selectedOptions.length > 0 ? selectedOptions : null;
-        } else if (question.type === 'fill-in-the-blank') {
-            const fillInInput = document.getElementById('fillInTheBlankInput');
-            userAnswers[currentQuestionIndex] = fillInInput ? fillInInput.value.trim() : null;
+        const q = questions[currentQuestionIndex];
+        if (q.type === 'single-select') {
+            const selected = document.querySelector(`input[name="q${currentQuestionIndex}"]:checked`);
+            userAnswers[currentQuestionIndex] = selected ? selected.value : null;
+        } else if (q.type === 'multi-select') {
+            const selected = Array.from(document.querySelectorAll(`input[name="q${currentQuestionIndex}"]:checked`)).map(e => e.value);
+            userAnswers[currentQuestionIndex] = selected.length > 0 ? selected : null;
+        } else if (q.type === 'fill-in-the-blank') {
+            const input = document.getElementById('fillInTheBlankInput');
+            userAnswers[currentQuestionIndex] = input ? input.value.trim() : null;
         }
     }
 
@@ -237,64 +210,43 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function calculateScore() {
-        let score = 0;
-        let correctAnswersCount = 0;
-        let incorrectAnswersCount = 0;
-        let unattemptedCount = 0;
-        const detailedResults = [];
+        let score = 0, correct = 0, incorrect = 0, unattempted = 0;
+        const details = [];
 
-        questions.forEach((question, index) => {
-            const userAnswer = userAnswers[index];
+        questions.forEach((q, i) => {
+            const ua = userAnswers[i];
             let isCorrect = false;
 
-            if (userAnswer === null || (Array.isArray(userAnswer) && userAnswer.length === 0)) {
-                unattemptedCount++;
-            } else {
-                if (question.type === 'single-select' || question.type === 'fill-in-the-blank') {
-                    if (typeof question.correctAnswer === 'string') { // Ensure correct answer is always treated as string for comparison
-                        isCorrect = (userAnswer.toLowerCase() === question.correctAnswer.toLowerCase());
-                    } else {
-                         // Fallback for unexpected correct answer format
-                        isCorrect = false;
-                    }
-                } else if (question.type === 'multi-select') {
-                    // Sort arrays for consistent comparison
-                    const sortedUserAnswer = Array.isArray(userAnswer) ? [...userAnswer].sort() : [];
-                    const sortedCorrectAnswer = [...question.correctAnswer].sort();
-                    isCorrect = JSON.stringify(sortedUserAnswer) === JSON.stringify(sortedCorrectAnswer);
-                }
-
-                if (isCorrect) {
-                    score++;
-                    correctAnswersCount++;
-                } else {
-                    incorrectAnswersCount++;
-                }
+            if (!ua || (Array.isArray(ua) && ua.length === 0)) {
+                unattempted++;
+            } else if (q.type === 'single-select' || q.type === 'fill-in-the-blank') {
+                isCorrect = ua.toLowerCase() === q.correctAnswer.toLowerCase();
+            } else if (q.type === 'multi-select') {
+                isCorrect = JSON.stringify([...ua].sort()) === JSON.stringify([...q.correctAnswer].sort());
             }
 
-            detailedResults.push({
-                question: question.question,
-                userAnswer: userAnswer,
-                correctAnswer: question.correctAnswer,
-                isCorrect: isCorrect,
-                type: question.type
-            });
+            if (isCorrect) {
+                score++;
+                correct++;
+            } else if (ua) {
+                incorrect++;
+            }
+
+            details.push({ question: q.question, userAnswer: ua, correctAnswer: q.correctAnswer, isCorrect });
         });
 
-        return { score, correctAnswersCount, incorrectAnswersCount, unattemptedCount, totalQuestions: questions.length, detailedResults };
+        return { score, correct, incorrect, unattempted, totalQuestions: questions.length, detailedResults: details };
     }
-
 
     function submitQuiz() {
         stopTimer();
-        const confirmSubmit = confirm('Are you sure you want to submit your quiz?');
-        if (confirmSubmit) {
-            saveAnswer(); // Save the answer for the last question
+        if (confirm("Are you sure you want to submit your quiz?")) {
+            saveAnswer();
             const results = calculateScore();
-            localStorage.setItem('quizResults', JSON.stringify(results));
-            window.location.href = 'results.html'; // Redirect to results page
+            localStorage.setItem("quizResults", JSON.stringify(results));
+            window.location.href = "results.html";
         } else {
-            startTimer(); // Resume timer if not submitted
+            startTimer();
         }
     }
 
@@ -302,27 +254,18 @@ document.addEventListener('DOMContentLoaded', () => {
     nextBtn.addEventListener('click', nextQuestion);
     prevBtn.addEventListener('click', prevQuestion);
     submitBtn.addEventListener('click', submitQuiz);
-    logoutBtn.addEventListener('click', () => {
-        localStorage.removeItem('loggedInUser'); // Clear logged in user
-        window.location.href = 'index.html'; // Redirect to home/login page
-    });
-   const logoutBtn = document.getElementById('logoutBtn');
-if (logoutBtn) {
-    logoutBtn.addEventListener('click', function () {
-        localStorage.removeItem('loggedInUser');
-        console.log('Logout clicked: redirecting...');
-        alert("You have been logged out.");
-        window.location.href = 'login.html'; // or 'index.html' if that's your login page
-    });
-} else {
-    console.warn("Logout button not found. Check if the element with id='logoutBtn' exists in your HTML.");
-}
 
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('loggedInUser');
+            alert("You have been logged out.");
+            window.location.href = 'login.html';
+        });
+    }
 
-    // Start quiz only after fullscreen modal is handled
+    // Start quiz after modal
     function startQuiz() {
         loadQuestion();
         startTimer();
     }
-    
 });
