@@ -3,16 +3,18 @@ document.addEventListener('DOMContentLoaded', () => {
     const navLinks = document.querySelectorAll('.nav-link[data-section]');
 
     function showSection(sectionId) {
+        // Toggle visibility of sections
         sections.forEach(section => {
             if (section.id === sectionId) {
                 section.classList.remove('d-none');
-                section.classList.add('active'); // Add active class if you want to style active section
+                section.classList.add('active');
             } else {
                 section.classList.add('d-none');
                 section.classList.remove('active');
             }
         });
 
+        // Highlight the corresponding nav link
         navLinks.forEach(link => {
             if (link.dataset.section === sectionId.replace('-section', '')) {
                 link.classList.add('active');
@@ -22,16 +24,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Event listeners for navigation links
+    // Navigation link click handler
     navLinks.forEach(link => {
-        link.addEventListener('click', (event) => {
+        link.addEventListener('click', event => {
             event.preventDefault();
-            const targetSection = event.target.dataset.section + '-section';
-            showSection(targetSection);
+            const targetSectionId = link.dataset.section + '-section';
+            showSection(targetSectionId);
         });
     });
 
-    // Handle "Get Started" button on home page
+    // Handle "Get Started" button (if exists)
     const getStartedButton = document.querySelector('#home-section .btn');
     if (getStartedButton) {
         getStartedButton.addEventListener('click', () => {
@@ -39,6 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Initialize by showing the home section
+    // Default section to show
     showSection('home-section');
 });
